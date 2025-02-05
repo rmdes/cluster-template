@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/budimanjojo/talhelper/master/pkg/config/schemas/talconfig.json
+---
+# renovate: datasource=docker depName=ghcr.io/siderolabs/installer
+talosVersion: v1.9.1
+# renovate: datasource=docker depName=ghcr.io/siderolabs/kubelet
+kubernetesVersion: v1.32.0
+
+clusterName: "kubernetes"
+endpoint: https://#{ cluster.api.address }#:6443
+
+clusterPodNets:
+  - "#{ cluster.network.podCidr }#"
+clusterSvcNets:
+  - "#{ cluster.network.serviceCidr }#"
+
+additionalApiServerCertSans: &sans
+  - "#{ cluster.api.address }#"
+  #% for item in cluster.api.sans | default ([], true) %#
+  - "#{ item }#"
+  #% endfor %#
+  - "127.0.0.1"
+additionalMachineCertSans: *sans
+
+# Disable built-in CNI to use Cilium
+cniConfig: { name: none }
+
+nodes:
+  #% for item in cluster.nodes.inventory %#
+  - hostname: "#{ item.name }#"
+    ipAddress: "#{ item.address }#"
+    #% if item.disk.startswith('/') %#
+    installDisk: "#{ item.disk }#"
+    #% else %#
+    installDiskSelector:
+      serial: "#{ item.disk }#"
+    #% endif %#
+    talosImageURL: factory.talos.dev/installer/#{ item.schematicId }#
+    controlPlane: #{ (item.controller) | string | lower }#
+    networkInterfaces:
+      - addresses:
+          - "#{ item.address }#/#{ cluster.nodes.network.split('/') | last }#"
+        deviceSelector:
+          hardwareAddr: "#{ item.macAddr | lower }#"
+        dhcp: false
+        mtu: 1500
+        routes:
+          - network: 0.0.0.0/0
+            gateway: "#{ cluster.nodes.network | nthhost(1) }#"
+        #% if item.controller %#
+        vip:
+          ip: "#{ cluster.api.address }#"
+        #% endif %#
+    #% for file in talos_patches('%s' % (item.name)) %#
+    #% if loop.index == 1 %#
+    patches:
+    #% endif %#
+      - "@./patches/#{ item.name }#/#{ file | basename }#"
+    #% endfor %#
+  #% endfor %#
+
+# Global patches
+patches:
+  #% for file in talos_patches('global') %#
+  - "@./patches/global/#{ file | basename }#"
+  #% endfor %#
+
+#% for file in talos_patches('controller') %#
+#% if loop.index == 1 %#
+# Controller patches
+controlPlane:
+  patches:
+#% endif %#
+    - "@./patches/controller/#{ file | basename }#"
+#% endfor %#
+
+#% if (cluster.nodes.inventory | selectattr('controller', 'equalto', False) | list | length) and (talos_patches('worker') | length) %#
+#% for file in talos_patches('worker') %#
+#% if loop.index == 1 %#
+# Worker patches
+worker:
+  patches:
+#% endif %#
+    - "@./patches/worker/#{ file | basename }#"
+#% endfor %#
+#% endif %#

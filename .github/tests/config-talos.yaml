@@ -1,0 +1,68 @@
+---
+cluster:
+  name: "kubernetes"
+  nodes:
+    schematicId: "376567988ad370138ad8b2698212367b8edcb69b5fd68c80be1f2ec7d603b4ba"
+    network: 10.10.10.0/24
+    defaultGateway: "10.10.10.1"
+    inventory:
+      - name: "k8s-0"
+        address: "192.168.42.10"
+        controller: true
+        disk: "/dev/sda"
+        macAddr: "aa:aa:aa:aa:aa:aa"
+        mtu: 1500
+        schematicId: "a76567988ad370138ad8b2698212367b8edcb69b5fd68c80be1f2ec7d603b4ba"
+      - name: "k8s-1"
+        address: "192.168.42.11"
+        controller: true
+        disk: "/dev/sda"
+        macAddr: "aa:aa:aa:aa:aa:ab"
+        mtu: 1500
+        schematicId: "b76567988ad370138ad8b2698212367b8edcb69b5fd68c80be1f2ec7d603b4ba"
+      - name: "k8s-2"
+        address: "192.168.42.12"
+        controller: true
+        disk: "/dev/sda"
+        macAddr: "aa:aa:aa:aa:aa:ac"
+        mtu: 1500
+        schematicId: "c76567988ad370138ad8b2698212367b8edcb69b5fd68c80be1f2ec7d603b4ba"
+    dns: ["1.1.1.1", "1.0.0.1"]
+    ntp: ["162.159.200.1", "162.159.200.123"]
+  network:
+    podCidr: "10.69.0.0/16"
+    serviceCidr: "10.96.0.0/16"
+    loadBalancerMode: "dsr"
+  api:
+    address: "192.168.42.100"
+    sans: ["fake.internal"]
+
+flux:
+  github:
+    address: "https://github.com/onedr0p/cluster-template.git"
+    branch: "main"
+    token: "cc2b419973672bae9e25cf670e4374da"
+    privateKey: |
+      -----BEGIN OPENSSH PRIVATE KEY-----
+      ...
+      -----END OPENSSH PRIVATE KEY-----
+  sops:
+    publicKey: "${TEMPLATE_AGE_PUBLIC_KEY}"
+
+cloudflare:
+  enabled: true
+  domain: "example.com"
+  token: "fake"
+  acme:
+    email: "fake@example.com"
+    production: false
+  ingress:
+    address: "10.10.10.251"
+  dns:
+    address: "10.10.10.253"
+  tunnel:
+    id: "fake"
+    accountId: "fake"
+    secret: "fake"
+    ingress:
+      address: "10.10.10.252"

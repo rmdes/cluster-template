@@ -1,0 +1,11 @@
+#% if gitops.enabled %#
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: cilium
+  namespace: flux-system
+spec:
+  interval: 1h
+  url: https://helm.cilium.io
+#% endif %#
